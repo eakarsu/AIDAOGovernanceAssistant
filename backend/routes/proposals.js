@@ -1,12 +1,25 @@
 const express = require('express');
 const pool = require('../db');
 const auth = require('../middleware/auth');
+const { auditLog } = require('../middleware/auditLogger');
 const router = express.Router();
 
 router.get('/', auth, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM proposals ORDER BY created_at DESC');
-    res.json(result.rows);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 25));
+    const offset = (page - 1) * limit;
+
+    const [countResult, dataResult] = await Promise.all([
+      pool.query('SELECT COUNT(*) FROM proposals'),
+      pool.query('SELECT * FROM proposals ORDER BY created_at DESC LIMIT $1 OFFSET $2', [limit, offset])
+    ]);
+
+    const total = parseInt(countResult.rows[0].count);
+    res.json({
+      data: dataResult.rows,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
+    });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -18,9 +31,27 @@ router.get('/:id', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, auditLog('proposals', 'create'), async (req, res) => {
   try {
     const { title, description, dao_name, proposal_type, status, votes_for, votes_against, quorum_required, proposer } = req.body;
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'title is required and must be a non-empty string' });
+    }
+    if (!description || typeof description !== 'string' || description.trim().length === 0) {
+      return res.status(400).json({ error: 'description is required and must be a non-empty string' });
+    }
+    if (!dao_name || typeof dao_name !== 'string' || dao_name.trim().length === 0) {
+      return res.status(400).json({ error: 'dao_name is required' });
+    }
+    const validTypes = ['governance', 'treasury', 'technical', 'social', 'other'];
+    if (proposal_type && !validTypes.includes(proposal_type)) {
+      return res.status(400).json({ error: `proposal_type must be one of: ${validTypes.join(', ')}` });
+    }
+    if (quorum_required !== undefined && (isNaN(Number(quorum_required)) || Number(quorum_required) < 0 || Number(quorum_required) > 100)) {
+      return res.status(400).json({ error: 'quorum_required must be a number between 0 and 100' });
+    }
+
     const result = await pool.query(
       `INSERT INTO proposals (title, description, dao_name, proposal_type, status, votes_for, votes_against, quorum_required, proposer)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
@@ -30,7 +61,7 @@ router.post('/', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, auditLog('proposals', 'update'), async (req, res) => {
   try {
     const { title, description, dao_name, proposal_type, status, votes_for, votes_against, quorum_required, proposer } = req.body;
     const result = await pool.query(
@@ -43,7 +74,7 @@ router.put('/:id', auth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, auditLog('proposals', 'delete'), async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM proposals WHERE id = $1 RETURNING *', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });

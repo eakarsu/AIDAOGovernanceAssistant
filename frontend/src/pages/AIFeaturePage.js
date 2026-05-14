@@ -34,9 +34,18 @@ export default function AIFeaturePage({ feature, featureKey, onBack }) {
   const [loading, setLoading] = useState(false);
   const [preferences, setPreferences] = useState('');
 
+  const [textInput, setTextInput] = useState('');
+  const [multiSelect, setMultiSelect] = useState([]);
+  const [extraField, setExtraField] = useState('');
+
   useEffect(() => {
     if (feature.dataEndpoint) {
-      api.get(feature.dataEndpoint).then(res => setItems(res.data)).catch(console.error);
+      api.get(feature.dataEndpoint, { params: { limit: 100 } })
+        .then(res => {
+          const data = res.data?.data && Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+          setItems(data);
+        })
+        .catch(console.error);
     }
   }, [feature.dataEndpoint]);
 
@@ -45,11 +54,29 @@ export default function AIFeaturePage({ feature, featureKey, onBack }) {
     setAiResult(null);
     try {
       const payload = {};
-      if (feature.dataEndpoint && selectedId) {
+      if (feature.dataEndpoint && selectedId && !feature.idField) {
         payload.proposal_id = parseInt(selectedId);
+      }
+      if (feature.idField && selectedId) {
+        payload[feature.idField] = parseInt(selectedId);
       }
       if (featureKey === 'delegate-recommendations' && preferences) {
         payload.preferences = preferences;
+      }
+      if (featureKey === 'proposal-similarity' && textInput) {
+        payload.proposal_text = textInput;
+      }
+      if (featureKey === 'multi-dao-comparison' && multiSelect.length >= 2) {
+        payload.dao_ids = multiSelect.map(id => parseInt(id));
+      }
+      if (featureKey === 'treasury-rebalancer' && extraField) {
+        payload.target_risk = extraField;
+      }
+      if (featureKey === 'voting-alerts' && extraField) {
+        payload.sensitivity = extraField;
+      }
+      if (featureKey === 'compliance-check' && extraField) {
+        payload.jurisdiction = extraField;
       }
       const res = await api.post(feature.aiEndpoint, payload);
       setAiResult(res.data);
@@ -62,7 +89,11 @@ export default function AIFeaturePage({ feature, featureKey, onBack }) {
 
   const getAiContent = () => {
     if (!aiResult) return null;
-    return aiResult.analysis || aiResult.prediction || aiResult.risk_assessment || aiResult.recommendations || aiResult.health_score || aiResult.sentiment;
+    return aiResult.analysis || aiResult.prediction || aiResult.risk_assessment ||
+      aiResult.recommendations || aiResult.health_score || aiResult.sentiment ||
+      aiResult.timeline || aiResult.network_analysis || aiResult.similarity_analysis ||
+      aiResult.education || aiResult.comparison || aiResult.rebalancing_plan ||
+      aiResult.alerts || aiResult.compliance_report;
   };
 
   return (
@@ -105,10 +136,83 @@ export default function AIFeaturePage({ feature, featureKey, onBack }) {
           </div>
         )}
 
+        {featureKey === 'proposal-similarity' && (
+          <div className="form-group">
+            <label>Proposal Text</label>
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="Paste the new proposal text to compare against historical proposals..."
+              rows={6}
+            />
+          </div>
+        )}
+
+        {featureKey === 'multi-dao-comparison' && (
+          <div className="form-group">
+            <label>Select DAOs to Compare (hold Ctrl/Cmd for multi-select; choose at least 2)</label>
+            <select
+              multiple
+              value={multiSelect}
+              onChange={(e) => setMultiSelect(Array.from(e.target.selectedOptions, o => o.value))}
+              style={{ minHeight: 120 }}
+            >
+              {items.map(item => (
+                <option key={item.id} value={item.id}>{item.name} ({item.blockchain})</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {featureKey === 'treasury-rebalancer' && (
+          <div className="form-group">
+            <label>Target Risk Profile</label>
+            <select value={extraField} onChange={(e) => setExtraField(e.target.value)}>
+              <option value="">-- Default (balanced) --</option>
+              <option value="conservative">Conservative</option>
+              <option value="balanced">Balanced</option>
+              <option value="growth">Growth</option>
+              <option value="aggressive">Aggressive</option>
+            </select>
+          </div>
+        )}
+
+        {featureKey === 'voting-alerts' && (
+          <div className="form-group">
+            <label>Alert Sensitivity</label>
+            <select value={extraField} onChange={(e) => setExtraField(e.target.value)}>
+              <option value="">-- Default (medium) --</option>
+              <option value="low">Low (only critical)</option>
+              <option value="medium">Medium</option>
+              <option value="high">High (all signals)</option>
+            </select>
+          </div>
+        )}
+
+        {featureKey === 'compliance-check' && (
+          <div className="form-group">
+            <label>Jurisdiction</label>
+            <select value={extraField} onChange={(e) => setExtraField(e.target.value)}>
+              <option value="">-- Default (US) --</option>
+              <option value="US">United States</option>
+              <option value="EU">European Union</option>
+              <option value="UK">United Kingdom</option>
+              <option value="Singapore">Singapore</option>
+              <option value="Switzerland">Switzerland</option>
+              <option value="Cayman">Cayman Islands</option>
+            </select>
+          </div>
+        )}
+
         <button
           className="btn btn-ai"
           onClick={runAnalysis}
-          disabled={loading || (feature.dataEndpoint && !feature.noSelect && !selectedId)}
+          disabled={
+            loading ||
+            (feature.dataEndpoint && !feature.noSelect && !selectedId && !['multi-dao-comparison', 'proposal-similarity'].includes(featureKey)) ||
+            (featureKey === 'proposal-similarity' && !textInput) ||
+            (featureKey === 'multi-dao-comparison' && multiSelect.length < 2)
+          }
         >
           {loading ? 'Analyzing...' : `Run ${feature.title}`}
         </button>
@@ -136,6 +240,9 @@ export default function AIFeaturePage({ feature, featureKey, onBack }) {
                 </p>
               )}
             </div>
+            {aiResult.cached && (
+              <span className="model-tag" style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e', marginRight: 8 }}>CACHED</span>
+            )}
             {aiResult.model && <span className="model-tag">{aiResult.model}</span>}
           </div>
 

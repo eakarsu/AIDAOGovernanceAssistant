@@ -6,18 +6,28 @@ export default function DataPage({ feature, featureKey, onSelectItem, onBack }) 
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({});
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const limit = 25;
 
   const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get(feature.endpoint);
-      setItems(res.data);
+      const res = await api.get(feature.endpoint, { params: { page, limit } });
+      // Handle both paginated {data,pagination} and raw array responses
+      if (res.data && Array.isArray(res.data.data)) {
+        setItems(res.data.data);
+        setPagination(res.data.pagination || null);
+      } else {
+        setItems(res.data || []);
+        setPagination(null);
+      }
     } catch (err) {
       console.error('Error fetching items:', err);
     } finally {
       setLoading(false);
     }
-  }, [feature.endpoint]);
+  }, [feature.endpoint, page]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -77,6 +87,7 @@ export default function DataPage({ feature, featureKey, onSelectItem, onBack }) 
           <p>Create your first item to get started</p>
         </div>
       ) : (
+        <>
         <div className="data-table-container">
           <table className="data-table">
             <thead>
@@ -101,6 +112,14 @@ export default function DataPage({ feature, featureKey, onSelectItem, onBack }) 
             </tbody>
           </table>
         </div>
+        {pagination && pagination.totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, padding: '20px 0' }}>
+            <button className="btn btn-secondary" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>← Prev</button>
+            <span style={{ color: '#94a3b8', fontSize: 13 }}>Page {pagination.page} of {pagination.totalPages} • {pagination.total} total</span>
+            <button className="btn btn-secondary" disabled={page >= pagination.totalPages} onClick={() => setPage(p => p + 1)}>Next →</button>
+          </div>
+        )}
+        </>
       )}
 
       {showModal && (
