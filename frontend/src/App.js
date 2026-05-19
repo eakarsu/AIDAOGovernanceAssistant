@@ -5,6 +5,7 @@ import DataPage from './pages/DataPage';
 import DetailView from './pages/DetailView';
 import AIFeaturePage from './pages/AIFeaturePage';
 import AINewToolsPage from './pages/AINewToolsPage';
+import CustomViewsPage from './pages/CustomViewsPage';
 
 // // === Batch 02 Gaps & Frontend Mounts ===
 import CfVoterEducationDeliberation from './pages/CfVoterEducationDeliberation';
@@ -60,6 +61,17 @@ export default function App() {
     }
   }, [token]);
 
+  useEffect(() => {
+    const syncFromPath = () => {
+      if (typeof window !== 'undefined' && window.location.pathname === '/custom-views') {
+        setCurrentPage('custom-views');
+      }
+    };
+    syncFromPath();
+    window.addEventListener('popstate', syncFromPath);
+    return () => window.removeEventListener('popstate', syncFromPath);
+  }, []);
+
   const handleLogin = (userData, tokenData) => {
     setUser(userData);
     setToken(tokenData);
@@ -79,6 +91,10 @@ export default function App() {
   const navigateTo = (page, item = null) => {
     setCurrentPage(page);
     setSelectedItem(item);
+    if (typeof window !== 'undefined' && window.history) {
+      const path = page === 'custom-views' ? '/custom-views' : '/';
+      try { window.history.pushState({}, '', path); } catch (e) {}
+    }
   };
 
   if (!user || !token) {
@@ -93,6 +109,9 @@ export default function App() {
     }
     if (currentPage === 'ai-new-tools') {
       return <AINewToolsPage onBack={() => navigateTo('dashboard')} />;
+    }
+    if (currentPage === 'custom-views') {
+      return <CustomViewsPage onBack={() => navigateTo('dashboard')} />;
     }
     if (feature?.type === 'ai') {
       return <AIFeaturePage feature={feature} featureKey={currentPage} onBack={() => navigateTo('dashboard')} />;
@@ -138,6 +157,13 @@ export default function App() {
           ))}
           <div className={`sidebar-item ${currentPage === 'ai-new-tools' ? 'active' : ''}`} onClick={() => navigateTo('ai-new-tools')}>
             <span className="icon">🆕</span> AI New Tools
+          </div>
+        </div>
+
+        <div className="sidebar-section">
+          <div className="sidebar-section-title">Custom Views</div>
+          <div className={`sidebar-item ${currentPage === 'custom-views' ? 'active' : ''}`} onClick={() => navigateTo('custom-views')} data-testid="sidebar-dao-views">
+            <span className="icon">🧭</span> DAO Views
           </div>
         </div>
 

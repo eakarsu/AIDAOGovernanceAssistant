@@ -75,6 +75,14 @@ app.use('/api/gap-no-historical-voting-pattern-analytics', require('./routes/gap
 // // === Batch 02 Gaps & Frontend Mounts ===
 app.use('/api/gap-no-webhooks', require('./routes/gap_no_webhooks'));
 
+// === Custom Views (DAO Views) - mounted BEFORE 404 ===
+app.use('/api/custom-views', require('./routes/customViews'));
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found', path: req.originalUrl });
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
   console.log(`CORS origins: ${corsOrigins.join(', ')}`);
