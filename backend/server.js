@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+require('dotenv').config({ path: '/Users/erolakarsu/projects/beauty-wellness-ai/.env' });
 const { aiRateLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
@@ -77,6 +78,7 @@ app.use('/api/gap-no-webhooks', require('./routes/gap_no_webhooks'));
 
 // === Custom Views (DAO Views) - mounted BEFORE 404 ===
 app.use('/api/custom-views', require('./routes/customViews'));
+app.use('/api/quorum-rescue-planner', require('./routes/quorumRescuePlanner'));
 
 // 404 handler
 app.use((req, res) => {

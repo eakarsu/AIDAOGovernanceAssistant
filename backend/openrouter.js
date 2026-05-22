@@ -1,5 +1,6 @@
 const https = require('https');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+require('dotenv').config({ path: '/Users/erolakarsu/projects/beauty-wellness-ai/.env', override: true });
 
 // 3-strategy JSON parsing: extract from fences/text, fix quotes & python-isms, repair truncation
 function parseAIJson(text) {

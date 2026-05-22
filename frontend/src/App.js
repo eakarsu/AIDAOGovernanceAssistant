@@ -6,6 +6,7 @@ import DetailView from './pages/DetailView';
 import AIFeaturePage from './pages/AIFeaturePage';
 import AINewToolsPage from './pages/AINewToolsPage';
 import CustomViewsPage from './pages/CustomViewsPage';
+import QuorumRescuePlanner from './pages/QuorumRescuePlanner';
 
 // // === Batch 02 Gaps & Frontend Mounts ===
 import CfVoterEducationDeliberation from './pages/CfVoterEducationDeliberation';
@@ -113,6 +114,9 @@ export default function App() {
     if (currentPage === 'custom-views') {
       return <CustomViewsPage onBack={() => navigateTo('dashboard')} />;
     }
+    if (currentPage === 'quorum-rescue-planner') {
+      return <QuorumRescuePlanner onBack={() => navigateTo('dashboard')} />;
+    }
     if (feature?.type === 'ai') {
       return <AIFeaturePage feature={feature} featureKey={currentPage} onBack={() => navigateTo('dashboard')} />;
     }
@@ -164,6 +168,9 @@ export default function App() {
           <div className="sidebar-section-title">Custom Views</div>
           <div className={`sidebar-item ${currentPage === 'custom-views' ? 'active' : ''}`} onClick={() => navigateTo('custom-views')} data-testid="sidebar-dao-views">
             <span className="icon">🧭</span> DAO Views
+          </div>
+          <div className={`sidebar-item ${currentPage === 'quorum-rescue-planner' ? 'active' : ''}`} onClick={() => navigateTo('quorum-rescue-planner')}>
+            <span className="icon">🗳️</span> Quorum Rescue
           </div>
         </div>
 
