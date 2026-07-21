@@ -1,0 +1,7 @@
+# Governed DAO operations
+
+The launcher only starts this repository's processes and only stops its child PIDs. Bootstrap, schema preparation, migration and destructive demo seeding are separate. The legacy seed drops tables and is guarded by `CONFIRM_DESTRUCTIVE_DEMO_SEED=yes`; never run it against retained data. `scripts/migrate.sh` requires an existing legacy `users` baseline and applies only numbered governed migrations.
+
+The governed workflow pins proposal identity to chain, governor and snapshot block; allowlists contract targets and code hashes; uses exact integer vote tallies; stores delegations, canonical block hashes, simulations, provider failures and audit events; enforces optimistic transitions; and requires a fresh execution simulation. Signing requests are short-lived wallet payloads. The server never requests, stores or transmits a seed phrase or private key, and execution cannot be marked complete without an explicit wallet signature plus transaction hash. Generated gap endpoints are not mounted.
+
+RPC/indexer, governance-contract, treasury and notification integrations remain disabled pending credentials, reorg/replay fixtures and chain-specific contract tests. Contract allowlists, confirmation depth, quorum policy and execution traces require DAO security review. No simulated or AI-produced proposal is authoritative or executable without member review and wallet signing.
