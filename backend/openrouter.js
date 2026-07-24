@@ -1,6 +1,5 @@
 const https = require('https');
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
-require('dotenv').config({ path: '/Users/erolakarsu/projects/beauty-wellness-ai/.env', override: true });
 
 // 3-strategy JSON parsing: extract from fences/text, fix quotes & python-isms, repair truncation
 function parseAIJson(text) {
@@ -51,9 +50,12 @@ async function callOpenRouter(systemPrompt, userPrompt, options = {}) {
   });
 
   return new Promise((resolve, reject) => {
+    const baseUrl = (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/$/, '');
+    const endpoint = new URL(`${baseUrl}/chat/completions`);
     const reqOptions = {
-      hostname: 'openrouter.ai',
-      path: '/api/v1/chat/completions',
+      hostname: endpoint.hostname,
+      port: endpoint.port || 443,
+      path: `${endpoint.pathname}${endpoint.search}`,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
