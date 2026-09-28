@@ -51,8 +51,8 @@ export default function Login({ onLogin }) {
           </button>
         </form>
 
-        <button className="auto-fill-btn" onClick={handleAutoFill}>
-          Quick Login — Auto-fill Demo Credentials
+        <button aria-label="Auto Fill Demo Credentials" className="auto-fill-btn" onClick={handleAutoFill}>
+          Quick Login — Auto Fill Demo Credentials
         </button>
       </div>
     </div>
